@@ -44,8 +44,9 @@ def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     mask = (df['request'].str.contains('robots.txt', case=False, na=False)) | \
             (df['user_agent'].str.contains('Google', case=False, na=False))
 
-    df_filtered = df[mask]
-    df = df[~mask]
+    # Return copies to avoid SettingWithCopyWarning when modifying downstream
+    df_filtered = df[mask].copy()
+    df = df[~mask].copy()
     return df, df_filtered
 
 
@@ -121,7 +122,7 @@ def response2df(ip_response: list[dict], df: pd.DataFrame) -> None:
     '''
     field_list = ["country", "countryCode", "region", "regionName", "city", "zip", "lat", "lon", "timezone"]
     for element in field_list:
-        df[element] = [d.get(element, None) for d in ip_response]
+        df.loc[:, element] = [d.get(element, None) for d in ip_response]
 
 
 if __name__ == "__main__":
@@ -131,6 +132,6 @@ if __name__ == "__main__":
     ips = df_clean["ip_address"].to_list()
     geo_info = ips2geo(ips)
     response2df(geo_info, df_clean)
-    df_robots.to_csv("./log_robots.csv")
-    df_clean.to_csv("./log_clean.csv")
+    df_robots.to_csv("./log_robots.csv", index=False)
+    df_clean.to_csv("./log_clean.csv", index=False)
 
