@@ -3,7 +3,9 @@ import urllib.request
 from itertools import chain
 import re
 import shutil
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 import pandas as pd
 
 
@@ -128,9 +130,9 @@ def response2df(ip_response: list[dict], df: pd.DataFrame) -> None:
 
 
 if __name__ == "__main__":
-    current_dir = Path.cwd()
-    data_dir = current_dir / 'data'
-    log_file = data_dir / 'www.philiplessner.com.access.log'
+    load_dotenv()
+    data_dir = Path(os.getenv('DATA_FILE_DIR'))
+    log_file = Path(os.getenv('LOG_FILE_DIR'), os.getenv('LOG_FILE')) 
     # Backup current csv files
     shutil.copy(data_dir / 'log_clean.csv', data_dir / 'log_clean.csv.bkp')
     shutil.copy(data_dir / 'log_robots.csv', data_dir / 'log_robots.csv.bkp')
@@ -141,15 +143,15 @@ if __name__ == "__main__":
     max_date = df_current['datetime'].max()
     df_new = df[df['datetime'] > max_date]
     df_clean, df_robots = filter_df(df_new)
-    df_robots_current = pd.read_csv(data_dir / 'log_robots.csv', parse_dates=['datetime'] )
-    df_robots_combined = pd.concat([df_robots_current, df_robots], ignore_index=True)
     # Get the geo data
     ips = df_clean["ip_address"].to_list()
     geo_info = ips2geo(ips)
     response2df(geo_info, df_clean)
-
+    # Combine the new data with the current data
     df_clean_current = pd.read_csv(data_dir / 'log_clean.csv', parse_dates=['datetime'])
     df_clean_combined = pd.concat([df_clean_current, df_clean], ignore_index=True)
+    df_robots_current = pd.read_csv(data_dir / 'log_robots.csv', parse_dates=['datetime'] )
+    df_robots_combined = pd.concat([df_robots_current, df_robots], ignore_index=True)
 
     # Write to csv
     df.to_csv(data_dir / 'log_raw.csv', index=False)
