@@ -2,10 +2,12 @@ import json
 import urllib.request
 from itertools import chain
 import re
+import shutil
+from pathlib import Path
 import pandas as pd
 
 
-def logfile2df(log_file: str) -> pd.DataFrame:
+def logfile2df(log_file: Path) -> pd.DataFrame:
     data = {
         'ip_address': [],
         'datetime': [],
@@ -126,12 +128,19 @@ def response2df(ip_response: list[dict], df: pd.DataFrame) -> None:
 
 
 if __name__ == "__main__":
-    log_file = '/media/phil/m2ssd/web/logs/www.philiplessner.com.access.log'
+    current_dir = Path.cwd()
+    data_dir = current_dir / 'data'
+    log_file = data_dir / 'www.philiplessner.com.access.log'
+    # Backup current csv files
+    shutil.copy(data_dir / 'log_clean.csv', data_dir / 'log_clean.csv.bkp')
+    shutil.copy(data_dir / 'log_robots.csv', data_dir / 'log_robots.csv.bkp')
+    shutil.copy(data_dir / 'log_raw.csv', data_dir / 'log_raw.csv.bkp')
     df = logfile2df(log_file)
     df_clean, df_robots = filter_df(df)
     ips = df_clean["ip_address"].to_list()
     geo_info = ips2geo(ips)
     response2df(geo_info, df_clean)
-    df_robots.to_csv("./log_robots.csv", index=False)
-    df_clean.to_csv("./log_clean.csv", index=False)
+    df.to_csv(data_dir / 'log_raw.csv', index=False)
+    df_robots.to_csv(data_dir / 'log_robots.csv', index=False)
+    df_clean.to_csv(data_dir / "log_clean.csv", index=False)
 
