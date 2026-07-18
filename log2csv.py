@@ -135,12 +135,24 @@ if __name__ == "__main__":
     shutil.copy(data_dir / 'log_clean.csv', data_dir / 'log_clean.csv.bkp')
     shutil.copy(data_dir / 'log_robots.csv', data_dir / 'log_robots.csv.bkp')
     shutil.copy(data_dir / 'log_raw.csv', data_dir / 'log_raw.csv.bkp')
+    # Append new entries
     df = logfile2df(log_file)
-    df_clean, df_robots = filter_df(df)
+    df_current = pd.read_csv(data_dir / 'log_raw.csv')
+    max_date = df_current['datetime'].max()
+    df_new = df[df['datetime'] > max_date]
+    df_clean, df_robots = filter_df(df_new)
+    df_robots_current = pd.read_csv(data_dir / 'log_robots.csv' )
+    df_robots_combined = pd.concat([df_robots_current, df_robots], ignore_index=True)
+    # Get the geo data
     ips = df_clean["ip_address"].to_list()
     geo_info = ips2geo(ips)
     response2df(geo_info, df_clean)
+
+    df_clean_current = pd.read_csv(data_dir / 'log_clean.csv')
+    df_clean_combined = pd.concat([df_clean_current, df_clean], ignore_index=True)
+
+    # Write to csv
     df.to_csv(data_dir / 'log_raw.csv', index=False)
-    df_robots.to_csv(data_dir / 'log_robots.csv', index=False)
-    df_clean.to_csv(data_dir / "log_clean.csv", index=False)
+    df_robots_combined.to_csv(data_dir / 'log_robots.csv', index=False)
+    df_clean_combined.to_csv(data_dir / "log_clean.csv", index=False)
 
