@@ -28,7 +28,7 @@ def main() -> None:
     parser.add_argument(
         "input_csv",
         nargs="?",
-        default="data.philiplessner.com/log_raw.csv",
+        default="data.philiplessner.com/log_clean.csv",
         help="Path to the CSV file to update",
     )
     parser.add_argument(
@@ -47,7 +47,7 @@ def main() -> None:
 
     df = split_request_column(df)
     df = df.drop(columns=['request'])
-    df = df[['ip_address', 'datetime', 'request_type', 'endpoint', 'http_version', 'status_code', 'user_agent']]
+    df = df[['ip_address', 'datetime', 'request_type', 'endpoint', 'http_version', 'status_code', 'user_agent', 'country', 'countryCode', 'region', 'regionName', 'city', 'zip', 'lat', 'lon', 'timezone']]
     df.to_csv(output_path, index=False)
 
     print(f"Updated {len(df)} rows and wrote to {output_path}")
