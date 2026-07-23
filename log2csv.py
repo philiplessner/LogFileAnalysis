@@ -13,13 +13,16 @@ def logfile2df(log_file: Path) -> pd.DataFrame:
     data = {
         'ip_address': [],
         'datetime': [],
-        'request': [],
+        'request_type': [],
+        'endpoint': [],
+        'http_version': [],
         'status_code': [],
         'user_agent': []
     }
     # Regular expression to parse the access log
     # Format: IP - - [date/time +timezone] "request" status size referrer "user-agent" ...
     pattern = r'(\d+\.\d+\.\d+\.\d+)\s+-\s+-\s+\[([^\]]+)\]\s+"([^"]+)"\s+(\d{3})\s+\d+\s+"-"\s+"([^"]+)"'
+    request_pattern = r'^(GET|POST)\s+(\S+)\s+(HTTP/\d\.\d)$'
     # Read and parse the log file
     with open(log_file, 'r') as f:
         for line in f:
@@ -30,10 +33,22 @@ def logfile2df(log_file: Path) -> pd.DataFrame:
                 request = match.group(3)
                 status_code = match.group(4)
                 user_agent = match.group(5)
-                
+
+                request_match = re.match(request_pattern, request.strip())
+                if request_match:
+                    request_type = request_match.group(1)
+                    endpoint = request_match.group(2)
+                    http_version = request_match.group(3)
+                else:
+                    request_type = None
+                    endpoint = None
+                    http_version = None
+
                 data['ip_address'].append(ip)
                 data['datetime'].append(datetime_str)
-                data['request'].append(request)
+                data['request_type'].append(request_type)
+                data['endpoint'].append(endpoint)
+                data['http_version'].append(http_version)
                 data['status_code'].append(status_code)
                 data['user_agent'].append(user_agent)
     # Create DataFrame
@@ -45,8 +60,8 @@ def logfile2df(log_file: Path) -> pd.DataFrame:
 
 def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # Filter for robots.txt requests with Google in user agent
-    mask = (df['request'].str.contains('robots.txt', case=False, na=False)) | \
-            (df['user_agent'].str.contains('Google', case=False, na=False))
+    mask = (df['endpoint'].fillna('').str.contains('robots.txt', case=False, na=False)) | \
+            (df['user_agent'].fillna('').str.contains('Google', case=False, na=False))
 
     # Return copies to avoid SettingWithCopyWarning when modifying downstream
     df_filtered = df[mask].copy()
