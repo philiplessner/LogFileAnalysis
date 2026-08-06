@@ -2,3 +2,4 @@ data.philiplessner.com/
 __pycache__
 .env
 .ipynb_checkpoints/
+.vscode/
