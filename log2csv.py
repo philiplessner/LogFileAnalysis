@@ -58,6 +58,13 @@ def logfile2df(log_file: Path) -> pd.DataFrame:
     return df
 
 
+def new_entries(path2log: Path, path2csv: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+    df = logfile2df(path2log)
+    df_current = pd.read_csv(path2csv, parse_dates=['datetime'])
+    max_date = df_current['datetime'].max()
+    return df_current, df[df['datetime'] > max_date]
+
+
 def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # Filter for robots.txt requests with Google in user agent
     mask = (df['endpoint'].fillna('').str.contains('robots.txt', case=False, na=False)) | \
@@ -75,17 +82,16 @@ if __name__ == "__main__":
     load_dotenv()
     data_dir = Path(os.getenv('DATA_FILE_DIR'))
     log_file = Path(os.getenv('LOG_FILE_DIR'), os.getenv('LOG_FILE')) 
+    path2raw = data_dir / 'log_raw.csv'
     # Backup current csv files
     shutil.copy(data_dir / 'log_clean.csv', data_dir / 'log_clean.csv.bkp')
     shutil.copy(data_dir / 'log_robots.csv', data_dir / 'log_robots.csv.bkp')
     shutil.copy(data_dir / 'log_raw.csv', data_dir / 'log_raw.csv.bkp')
-    # Get the new entries
-    df = logfile2df(log_file)
-    df_current = pd.read_csv(data_dir / 'log_raw.csv', parse_dates=['datetime'])
-    max_date = df_current['datetime'].max()
-    df_new = df[df['datetime'] > max_date]
+    # Get the get the current and new entries
+    df_current, df_new = new_entries(log_file, path2raw)
+    # Filter out robots
     df_clean, df_robots = filter_df(df_new)
-    # Get the geo data
+    # Get the geo data and append geo columns in dataframe
     ips = get_ips(df_clean)
     geo_info = ips2geo(ips)
     df_clean = response2df(geo_info, df_clean)
