@@ -1,6 +1,6 @@
-import pandas as pd
 import re
-from datetime import datetime
+
+import pandas as pd
 
 # Path to the log file
 log_file = '/media/phil/m2ssd/web/logs/www.philiplessner.com.access.log'
