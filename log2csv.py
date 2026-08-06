@@ -1,12 +1,13 @@
 import json
-import urllib.request
-from itertools import chain
+import os
 import re
 import shutil
-import os
+import urllib.request
+from itertools import chain
 from pathlib import Path
-from dotenv import load_dotenv
+
 import pandas as pd
+from dotenv import load_dotenv
 
 
 def logfile2df(log_file: Path) -> pd.DataFrame:
