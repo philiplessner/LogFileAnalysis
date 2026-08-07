@@ -82,5 +82,7 @@ def get_response(json_ips) -> list[dict]:
             return json.loads(response_text)
     except urllib.error.HTTPError as e:
         print(f"HTTP Error: {e.code} - {e.reason}")
+        raise
     except urllib.error.URLError as e:
         print(f"Connection Error: {e.reason}")
+        raise

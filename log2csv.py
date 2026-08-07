@@ -10,7 +10,7 @@ from geo import get_ips, ips2geo, response2df
 
 
 def logfile2df(log_file: Path) -> pd.DataFrame:
-    data = {
+    data: dict[str, list[str | None]] = {
         'ip_address': [],
         'datetime': [],
         'request_type': [],
@@ -79,14 +79,19 @@ def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 if __name__ == "__main__":
     # Get the paths
     load_dotenv()
-    data_dir = Path(os.getenv('DATA_FILE_DIR'))
-    log_file = Path(os.getenv('LOG_FILE_DIR'), os.getenv('LOG_FILE')) 
+    data_dir = Path(os.environ['DATA_FILE_DIR'])
+    log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
     path2raw = data_dir / 'log_raw.csv'
+    path2clean = data_dir / 'log_clean.csv'
+    path2robots = data_dir / 'log_robots.csv'
+    file_raw_exists = path2raw.exists()
+    file_clean_exists = path2clean.exists()
+    file_robots_exists = path2robots.exists()
 
     # Backup current csv files
-    shutil.copy(data_dir / 'log_clean.csv', data_dir / 'log_clean.csv.bkp')
-    shutil.copy(data_dir / 'log_robots.csv', data_dir / 'log_robots.csv.bkp')
-    shutil.copy(data_dir / 'log_raw.csv', data_dir / 'log_raw.csv.bkp')
+    if file_clean_exists: shutil.copy(path2clean, data_dir / 'log_clean.csv.bkp')
+    if file_robots_exists: shutil.copy(path2robots, data_dir / 'log_robots.csv.bkp')
+    if file_raw_exists: shutil.copy(path2raw, data_dir / 'log_raw.csv.bkp')
 
     # Get the get the current and new entries
     df_current, df_new = new_entries(log_file, path2raw)
@@ -100,14 +105,6 @@ if __name__ == "__main__":
     df_clean = response2df(geo_info, df_clean)
 
     # Combine the new data with the current data
-    df_clean_current = pd.read_csv(data_dir / 'log_clean.csv', parse_dates=['datetime'])
-    df_clean_combined = pd.concat([df_clean_current, df_clean], ignore_index=True)
-    df_robots_current = pd.read_csv(data_dir / 'log_robots.csv', parse_dates=['datetime'] )
-    df_robots_combined = pd.concat([df_robots_current, df_robots], ignore_index=True)
-    df_raw_combined = pd.concat([df_current, df_new],  ignore_index=True)
-
-    # Write to csv
-    df_raw_combined.to_csv(data_dir / 'log_raw.csv', index=False)
-    df_robots_combined.to_csv(data_dir / 'log_robots.csv', index=False)
-    df_clean_combined.to_csv(data_dir / "log_clean.csv", index=False)
-
+    df_clean.to_csv(path2clean, mode='a', header=not file_clean_exists, index=False)
+    df_robots.to_csv(path2robots, mode='a', header=not file_robots_exists, index=False)
+    df_new.to_csv(path2raw, mode='a', header=not file_raw_exists, index=False)
