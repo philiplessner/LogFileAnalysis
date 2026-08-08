@@ -69,7 +69,8 @@ def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # Filter for robots.txt requests with Google in user agent
     mask = (df['endpoint'].fillna('').str.contains('robots.txt', case=False, na=False)) | \
             (df['user_agent'].fillna('').str.contains('Google', case=False, na=False)) | \
-            (df['user_agent'].fillna('').str.contains('bot', case=False, na=False))
+            (df['user_agent'].fillna('').str.contains('bot', case=False, na=False)) | \
+            (df['user_agent'].fillna('').str.contains('scrapy', case=False, na=False))
 
 
     # Return copies to avoid SettingWithCopyWarning when modifying downstream
