@@ -9,6 +9,25 @@ from dotenv import load_dotenv
 from geo import get_ips, ips2geo, response2df
 
 
+BOT_USER_AGENT_PATTERN = (
+    r'bot|crawl|spider|slurp|scrapy|headlesschrome|censys|'
+    r'internet[-_ ]?measurement|panscient|turnitin|siteradar|'
+    r'facebookexternalhit|meta-(?:externalagent|webindexer)|'
+    r'googleassociationservice|google-site-verification|y!j-asr|'
+    r'go-http-client|python[-_/ ]?(?:requests|urllib)|curl/|wget/|'
+    r'libwww|aiohttp|httpx|okhttp|apache-httpclient|node-fetch|axios|'
+    r'postmanruntime|powershell|selenium|playwright|puppeteer|phantomjs|'
+    r'crusader-worker|vuln[_ -]?scanner|rust[_ -]?sniffer|masscan|zgrab|'
+    r'nmap|nikto|sqlmap|nuclei|chrome privacy preserving prefetch proxy|'
+    r'ui-homepage-check|^git/'
+)
+
+BROWSER_USER_AGENT_PATTERN = (
+    r'(?:Chrome|CriOS|Firefox|FxiOS|EdgA?|OPR|SamsungBrowser)/\d|'
+    r'Version/\d.*Safari/\d'
+)
+
+
 def logfile2df(log_file: Path) -> pd.DataFrame:
     data: dict[str, list[str | None]] = {
         'ip_address': [],
@@ -58,17 +77,39 @@ def logfile2df(log_file: Path) -> pd.DataFrame:
     return df
 
 
-def new_entries(path2log: Path, path2csv: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def new_entries(path2log: Path, path2csv: Path) -> pd.DataFrame:
     df = logfile2df(path2log)
     df_current = pd.read_csv(path2csv, parse_dates=['datetime'])
     max_date = df_current['datetime'].max()
-    return df_current, df[df['datetime'] > max_date]
+    return df[df['datetime'] > max_date]
 
 
 def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    # Filter for robots.txt requests with Google in user agent
-    mask = (df['endpoint'].fillna('').str.contains('robots.txt', case=False, na=False)) | \
-            (df['user_agent'].fillna('').str.contains('Google', case=False, na=False))
+    user_agent = df['user_agent'].fillna('').str.strip()
+
+    known_bot = (
+        user_agent.eq('')
+        | user_agent.eq('-')
+        | user_agent.str.contains(
+            BOT_USER_AGENT_PATTERN, case=False, regex=True, na=False
+        )
+    )
+    browser_candidate = (
+        user_agent.str.match(r'^Mozilla/5\.0', case=False, na=False)
+        & user_agent.str.contains(
+            BROWSER_USER_AGENT_PATTERN, case=False, regex=True, na=False
+        )
+    )
+
+    # Keep only full browser user agents. Unknown/minimal clients are retained in
+    # the filtered output along with known bots so they can still be inspected.
+    mask = (
+        df['endpoint'].fillna('').str.contains(
+            'robots.txt', case=False, regex=False, na=False
+        )
+        | known_bot
+        | ~browser_candidate
+    )
 
     # Return copies to avoid SettingWithCopyWarning when modifying downstream
     df_filtered = df[mask].copy()
@@ -93,8 +134,8 @@ if __name__ == "__main__":
     if file_robots_exists: shutil.copy(path2robots, data_dir / 'log_robots.csv.bkp')
     if file_raw_exists: shutil.copy(path2raw, data_dir / 'log_raw.csv.bkp')
 
-    # Get the get the current and new entries
-    df_current, df_new = new_entries(log_file, path2raw)
+    # Get the get the new entries
+    df_new = new_entries(log_file, path2raw)
 
     # Filter out robots
     df_clean, df_robots = filter_df(df_new)
