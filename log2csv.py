@@ -58,17 +58,19 @@ def logfile2df(log_file: Path) -> pd.DataFrame:
     return df
 
 
-def new_entries(path2log: Path, path2csv: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def new_entries(path2log: Path, path2csv: Path) -> pd.DataFrame:
     df = logfile2df(path2log)
     df_current = pd.read_csv(path2csv, parse_dates=['datetime'])
     max_date = df_current['datetime'].max()
-    return df_current, df[df['datetime'] > max_date]
+    return df[df['datetime'] > max_date]
 
 
 def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # Filter for robots.txt requests with Google in user agent
     mask = (df['endpoint'].fillna('').str.contains('robots.txt', case=False, na=False)) | \
-            (df['user_agent'].fillna('').str.contains('Google', case=False, na=False))
+            (df['user_agent'].fillna('').str.contains('Google', case=False, na=False)) | \
+            (df['user_agent'].fillna('').str.contains('bot', case=False, na=False))
+
 
     # Return copies to avoid SettingWithCopyWarning when modifying downstream
     df_filtered = df[mask].copy()
@@ -93,8 +95,8 @@ if __name__ == "__main__":
     if file_robots_exists: shutil.copy(path2robots, data_dir / 'log_robots.csv.bkp')
     if file_raw_exists: shutil.copy(path2raw, data_dir / 'log_raw.csv.bkp')
 
-    # Get the get the current and new entries
-    df_current, df_new = new_entries(log_file, path2raw)
+    # Get the get the new entries
+    df_new = new_entries(log_file, path2raw)
 
     # Filter out robots
     df_clean, df_robots = filter_df(df_new)
