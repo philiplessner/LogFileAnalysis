@@ -10,9 +10,22 @@ if __name__ == '__main__':
     load_dotenv()
     data_dir = Path(os.environ['DATA_FILE_DIR'])
     path2robots = data_dir / 'log_robots.csv'
-    df_robots = pd.read_csv(path2robots)
+    path2clean = data_dir / 'log_clean.csv'
+    # Get ip info for robots file
+    df_robots = pd.read_csv(path2robots, parse_dates=['datetime'])
     ips = get_ips(df_robots)
     geo_info = ips2geo(ips)
     df_robots= response2df(geo_info, df_robots)
+    # Mark robots records with "R"
     df_robots['Agent_Type'] = 'R'
-    df_robots.to_csv(data_dir / 'log_robots_geo.csv', index=False)
+    # Get clean file
+    df_clean = pd.read_csv(path2clean, parse_dates=['datetime'])
+    # Mark these records with "H" (for human)
+    df_clean['Agent_Type'] = 'H'
+    # Combine the dataframes and sort by date
+    df_combined = pd.concat([df_robots, df_clean], ignore_index=True).sort_values(
+        by='datetime'
+    ).reset_index(drop=True)
+    # Write to csv
+    df_combined.to_csv(data_dir / 'log.csv', index=False)
+

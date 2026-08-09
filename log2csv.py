@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 from geo import get_ips, ips2geo, response2df
 
-
 BOT_USER_AGENT_PATTERN = (
     r'bot|crawl|spider|slurp|scrapy|headlesschrome|censys|'
     r'internet[-_ ]?measurement|panscient|turnitin|siteradar|'
