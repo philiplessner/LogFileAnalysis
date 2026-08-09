@@ -122,7 +122,7 @@ if __name__ == "__main__":
     data_dir = Path(os.environ['DATA_FILE_DIR'])
     log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
     path2raw = data_dir / 'log_raw.csv'
-    path2clean = data_dir / 'log_clean.csv'
+    path2clean = data_dir / 'log.csv'
     path2robots = data_dir / 'log_robots.csv'
     file_raw_exists = path2raw.exists()
     file_clean_exists = path2clean.exists()
@@ -143,8 +143,14 @@ if __name__ == "__main__":
     ips = get_ips(df_clean)
     geo_info = ips2geo(ips)
     df_clean = response2df(geo_info, df_clean)
+    ips = get_ips(df_robots)
+    geo_info = ips2geo(ips)
+    df_robots = response2df(geo_info, df_robots)
+
+    # Mark the type of record and combine the dataframes
+    df_clean['Agent_Type'] = 'H'
+    df_robots['Agent_Type'] = 'R'
+    df_combined = pd.concat([df_clean, df_robots], ignore_index=True).sort_values(by='datetime')
 
     # Combine the new data with the current data
-    df_clean.to_csv(path2clean, mode='a', header=not file_clean_exists, index=False)
-    df_robots.to_csv(path2robots, mode='a', header=not file_robots_exists, index=False)
-    df_new.to_csv(path2raw, mode='a', header=not file_raw_exists, index=False)
+    df_combined.to_csv(path2clean, mode='a', header=not file_clean_exists, index=False)
