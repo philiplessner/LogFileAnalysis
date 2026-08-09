@@ -8,24 +8,6 @@ from dotenv import load_dotenv
 
 from geo import get_ips, ips2geo, response2df
 
-BOT_USER_AGENT_PATTERN = (
-    r'bot|crawl|spider|slurp|scrapy|headlesschrome|censys|'
-    r'internet[-_ ]?measurement|panscient|turnitin|siteradar|'
-    r'facebookexternalhit|meta-(?:externalagent|webindexer)|'
-    r'googleassociationservice|google-site-verification|y!j-asr|'
-    r'go-http-client|python[-_/ ]?(?:requests|urllib)|curl/|wget/|'
-    r'libwww|aiohttp|httpx|okhttp|apache-httpclient|node-fetch|axios|'
-    r'postmanruntime|powershell|selenium|playwright|puppeteer|phantomjs|'
-    r'crusader-worker|vuln[_ -]?scanner|rust[_ -]?sniffer|masscan|zgrab|'
-    r'nmap|nikto|sqlmap|nuclei|chrome privacy preserving prefetch proxy|'
-    r'ui-homepage-check|^git/'
-)
-
-BROWSER_USER_AGENT_PATTERN = (
-    r'(?:Chrome|CriOS|Firefox|FxiOS|EdgA?|OPR|SamsungBrowser)/\d|'
-    r'Version/\d.*Safari/\d'
-)
-
 
 def logfile2df(log_file: Path) -> pd.DataFrame:
     data: dict[str, list[str | None]] = {
@@ -84,6 +66,23 @@ def new_entries(path2log: Path, path2csv: Path) -> pd.DataFrame:
 
 
 def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    BOT_USER_AGENT_PATTERN = (
+        r'bot|crawl|spider|slurp|scrapy|headlesschrome|censys|'
+        r'internet[-_ ]?measurement|panscient|turnitin|siteradar|'
+        r'facebookexternalhit|meta-(?:externalagent|webindexer)|'
+        r'googleassociationservice|google-site-verification|y!j-asr|'
+        r'go-http-client|python[-_/ ]?(?:requests|urllib)|curl/|wget/|'
+        r'libwww|aiohttp|httpx|okhttp|apache-httpclient|node-fetch|axios|'
+        r'postmanruntime|powershell|selenium|playwright|puppeteer|phantomjs|'
+        r'crusader-worker|vuln[_ -]?scanner|rust[_ -]?sniffer|masscan|zgrab|'
+        r'nmap|nikto|sqlmap|nuclei|chrome privacy preserving prefetch proxy|'
+        r'ui-homepage-check|^git/'
+    )
+
+    BROWSER_USER_AGENT_PATTERN = (
+        r'(?:Chrome|CriOS|Firefox|FxiOS|EdgA?|OPR|SamsungBrowser)/\d|'
+        r'Version/\d.*Safari/\d'
+    )
     user_agent = df['user_agent'].fillna('').str.strip()
 
     known_bot = (
