@@ -137,19 +137,15 @@ if __name__ == "__main__":
 
     # Filter out robots
     df_clean, df_robots = filter_df(df_new)
-
-    # Get the geo data and append geo columns in dataframe
-    ips = get_ips(df_clean)
-    geo_info = ips2geo(ips)
-    df_clean = response2df(geo_info, df_clean)
-    ips = get_ips(df_robots)
-    geo_info = ips2geo(ips)
-    df_robots = response2df(geo_info, df_robots)
-
-    # Mark the type of record and combine the dataframes
     df_clean['Agent_Type'] = 'H'
     df_robots['Agent_Type'] = 'R'
+    # Combine the dataframes
     df_combined = pd.concat([df_clean, df_robots], ignore_index=True).sort_values(by='datetime')
+
+    # Get the geo data and append geo columns in dataframe
+    ips = get_ips(df_combined)
+    geo_info = ips2geo(ips)
+    df_combined = response2df(geo_info, df_combined)
 
     # Combine the new data with the current data
     df_combined.to_csv(path2clean, mode='a', header=not file_clean_exists, index=False)
