@@ -121,31 +121,30 @@ if __name__ == "__main__":
     data_dir = Path(os.environ['DATA_FILE_DIR'])
     log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
     path2raw = data_dir / 'log_raw.csv'
-    path2clean = data_dir / 'log.csv'
-    path2robots = data_dir / 'log_robots.csv'
+    path2processed = data_dir / 'log_processed.csv'
     file_raw_exists = path2raw.exists()
-    file_clean_exists = path2clean.exists()
-    file_robots_exists = path2robots.exists()
+    file_processed_exists = path2processed.exists()
 
     # Backup current csv files
-    if file_clean_exists: shutil.copy(path2clean, data_dir / 'log_clean.csv.bkp')
-    if file_robots_exists: shutil.copy(path2robots, data_dir / 'log_robots.csv.bkp')
+    if file_processed_exists: shutil.copy(path2processed, data_dir / 'log_processed.csv.bkp')
     if file_raw_exists: shutil.copy(path2raw, data_dir / 'log_raw.csv.bkp')
 
-    # Get the get the new entries
+    # Get the get the new raw entries
     df_new = new_entries(log_file, path2raw)
+    # Write the new raw entries
+    df_new.to_csv(path2raw, mode='a', header=not file_processed_exists, index=False)
 
-    # Filter out robots
-    df_clean, df_robots = filter_df(df_new)
-    df_clean['Agent_Type'] = 'H'
+    # Filter for robots and human user agents
+    df_human, df_robots = filter_df(df_new)
+    df_human['Agent_Type'] = 'H'
     df_robots['Agent_Type'] = 'R'
     # Combine the dataframes
-    df_combined = pd.concat([df_clean, df_robots], ignore_index=True).sort_values(by='datetime')
+    df_combined = pd.concat([df_human, df_robots], ignore_index=True).sort_values(by='datetime')
 
     # Get the geo data and append geo columns in dataframe
     ips = get_ips(df_combined)
     geo_info = ips2geo(ips)
     df_combined = response2df(geo_info, df_combined)
 
-    # Combine the new data with the current data
-    df_combined.to_csv(path2clean, mode='a', header=not file_clean_exists, index=False)
+    # Combine the new processed data with the current data
+    df_combined.to_csv(path2processed, mode='a', header=not file_processed_exists, index=False)
