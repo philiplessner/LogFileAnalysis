@@ -117,9 +117,13 @@ def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 if __name__ == "__main__":
     # Get the paths
-    load_dotenv()
-    data_dir = Path(os.environ['DATA_FILE_DIR'])
-    log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
+    if (str(Path.cwd()) == '/app'):
+        data_dir = Path('/app/data.philiplessner.com')
+        log_file = Path('/app/data.philiplessner.com/www.philiplessner.com.access.log')
+    else:
+        load_dotenv()
+        data_dir = Path(os.environ['DATA_FILE_DIR'])
+        log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
     path2raw = data_dir / 'log_raw.csv'
     path2processed = data_dir / 'log_processed.csv'
     file_raw_exists = path2raw.exists()
