@@ -3,13 +3,13 @@ import os
 import re
 import shutil
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
 
 from geo import get_ips, ips2geo, response2df
-
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +167,36 @@ if __name__ == "__main__":
     df_combined.to_csv(path2processed, mode='a', header=not file_processed_exists, index=False)
 
     # Append the data to logs.db
-    conn = sqlite3.connect(Path(data_dir, 'logs.db'))
-    df_combined.to_sql("logs", conn, if_exists="append", index=False)
-    conn.close()
+    database_path = data_dir / 'logs.db'
+
+    with closing(sqlite3.connect(database_path)) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS logs (
+                id INTEGER PRIMARY KEY,
+                ip_address TEXT,
+                datetime TIMESTAMP,
+                request_type TEXT,
+                endpoint TEXT,
+                http_version TEXT,
+                status_code INTEGER,
+                user_agent TEXT,
+                Agent_Type TEXT,
+                country TEXT,
+                countryCode TEXT,
+                region TEXT,
+                regionName TEXT,
+                city TEXT,
+                zip TEXT,
+                lat REAL,
+                lon REAL,
+                timezone TEXT
+            )
+        """)
+
+        df_combined.to_sql(
+            "logs",
+            conn,
+            if_exists="append",
+            index=False,
+        )
+        conn.commit()
