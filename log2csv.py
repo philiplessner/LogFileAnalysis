@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import sqlite3
 from pathlib import Path
 
 import pandas as pd
@@ -128,6 +129,8 @@ if __name__ == "__main__":
     path2processed = data_dir / 'log_processed.csv'
     file_raw_exists = path2raw.exists()
     file_processed_exists = path2processed.exists()
+    print(f"Data Directory: {str(data_dir)}")
+    print(f"log file: {str(log_file)}")
 
     # Backup current csv files
     if file_processed_exists: shutil.copy(path2processed, data_dir / 'log_processed.csv.bkp')
@@ -150,5 +153,10 @@ if __name__ == "__main__":
     geo_info = ips2geo(ips)
     df_combined = response2df(geo_info, df_combined)
 
-    # Combine the new processed data with the current data
+    # Append the data to log_processed.csv
     df_combined.to_csv(path2processed, mode='a', header=not file_processed_exists, index=False)
+
+    # Append the data to logs.db
+    conn = sqlite3.connect(Path(data_dir, 'logs.db'))
+    df_combined.to_sql("logs", conn, if_exists="append", index=False)
+    conn.close()

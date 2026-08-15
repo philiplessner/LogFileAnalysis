@@ -46,6 +46,8 @@ def response2df(ip_response: list[dict], df: pd.DataFrame) -> pd.DataFrame:
     field_list = ["country", "countryCode", "region", "regionName", "city", "zip", "lat", "lon", "timezone"]
     for element in field_list:
         dfc.loc[:, element] = [d.get(element, None) for d in ip_response]
+    dfc.astype(dtype={'status_code': 'Int64', 'lat': 'Float64', 'lon': 'Float64'})
+    dfc['datetime'] = pd.to_datetime(dfc['datetime'])
     return dfc
 
 
