@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import shutil
@@ -8,6 +9,9 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from geo import get_ips, ips2geo, response2df
+
+
+logger = logging.getLogger(__name__)
 
 
 def logfile2df(log_file: Path) -> pd.DataFrame:
@@ -125,12 +129,18 @@ if __name__ == "__main__":
         load_dotenv()
         data_dir = Path(os.environ['DATA_FILE_DIR'])
         log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
+    logging.basicConfig(
+        filename=data_dir / 'processed.log',
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+        encoding='utf-8',
+    )
     path2raw = data_dir / 'log_raw.csv'
     path2processed = data_dir / 'log_processed.csv'
     file_raw_exists = path2raw.exists()
     file_processed_exists = path2processed.exists()
-    print(f"Data Directory: {str(data_dir)}")
-    print(f"log file: {str(log_file)}")
+    logger.info("Data directory: %s", data_dir)
+    logger.info("Source log file: %s", log_file)
 
     # Backup current csv files
     if file_processed_exists: shutil.copy(path2processed, data_dir / 'log_processed.csv.bkp')
