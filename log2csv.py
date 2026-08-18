@@ -1,12 +1,17 @@
+import logging
 import os
 import re
 import shutil
+import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
 
 from geo import get_ips, ips2geo, response2df
+
+logger = logging.getLogger(__name__)
 
 
 def logfile2df(log_file: Path) -> pd.DataFrame:
@@ -117,13 +122,25 @@ def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 if __name__ == "__main__":
     # Get the paths
-    load_dotenv()
-    data_dir = Path(os.environ['DATA_FILE_DIR'])
-    log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
+    if (str(Path.cwd()) == '/app'):
+        data_dir = Path('/app/data.philiplessner.com')
+        log_file = Path('/app/data.philiplessner.com/www.philiplessner.com.access.log')
+    else:
+        load_dotenv()
+        data_dir = Path(os.environ['DATA_FILE_DIR'])
+        log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
+    logging.basicConfig(
+        filename=data_dir / 'processed.log',
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+        encoding='utf-8',
+    )
     path2raw = data_dir / 'log_raw.csv'
     path2processed = data_dir / 'log_processed.csv'
     file_raw_exists = path2raw.exists()
     file_processed_exists = path2processed.exists()
+    logger.info("Data directory: %s", data_dir)
+    logger.info("Source log file: %s", log_file)
 
     # Backup current csv files
     if file_processed_exists: shutil.copy(path2processed, data_dir / 'log_processed.csv.bkp')
@@ -146,5 +163,40 @@ if __name__ == "__main__":
     geo_info = ips2geo(ips)
     df_combined = response2df(geo_info, df_combined)
 
-    # Combine the new processed data with the current data
+    # Append the data to log_processed.csv
     df_combined.to_csv(path2processed, mode='a', header=not file_processed_exists, index=False)
+
+    # Append the data to logs.db
+    database_path = data_dir / 'logs.db'
+
+    with closing(sqlite3.connect(database_path)) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS logs (
+                id INTEGER PRIMARY KEY,
+                ip_address TEXT,
+                datetime TIMESTAMP,
+                request_type TEXT,
+                endpoint TEXT,
+                http_version TEXT,
+                status_code INTEGER,
+                user_agent TEXT,
+                Agent_Type TEXT,
+                country TEXT,
+                countryCode TEXT,
+                region TEXT,
+                regionName TEXT,
+                city TEXT,
+                zip TEXT,
+                lat REAL,
+                lon REAL,
+                timezone TEXT
+            )
+        """)
+
+        df_combined.to_sql(
+            "logs",
+            conn,
+            if_exists="append",
+            index=False,
+        )
+        conn.commit()
