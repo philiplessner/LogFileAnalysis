@@ -149,7 +149,7 @@ if __name__ == "__main__":
     # Get the get the new raw entries
     df_new = new_entries(log_file, path2raw)
     # Write the new raw entries
-    df_new.to_csv(path2raw, mode='a', header=not file_processed_exists, index=False)
+    df_new.to_csv(path2raw, mode='a', header=not file_raw_exists, index=False)
 
     # Filter for robots and human user agents
     df_human, df_robots = filter_df(df_new)
@@ -167,9 +167,9 @@ if __name__ == "__main__":
     df_combined.to_csv(path2processed, mode='a', header=not file_processed_exists, index=False)
 
     # Append the data to logs.db
-    database_path = data_dir / 'logs.db'
+    path2db = data_dir / 'logs.db'
 
-    with closing(sqlite3.connect(database_path)) as conn:
+    with closing(sqlite3.connect(path2db)) as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS logs (
                 id INTEGER PRIMARY KEY,
