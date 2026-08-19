@@ -163,6 +163,18 @@ if __name__ == "__main__":
     geo_info = ips2geo(ips)
     df_combined = response2df(geo_info, df_combined)
 
+    # Remove rows where endpoint is NULL/NaN before writing to CSV or DB
+    before_count = len(df_combined)
+    df_combined = df_combined[~df_combined['endpoint'].isna()].copy()
+    after_count = len(df_combined)
+    if before_count != after_count:
+        logger.info(
+            "Dropped %d rows with NULL endpoint (from %d to %d)",
+            before_count - after_count,
+            before_count,
+            after_count,
+        )
+
     # Append the data to log_processed.csv
     df_combined.to_csv(path2processed, mode='a', header=not file_processed_exists, index=False)
 
