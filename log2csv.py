@@ -26,7 +26,7 @@ def logfile2df(log_file: Path) -> pd.DataFrame:
     }
     # Regular expression to parse the access log
     # Format: IP - - [date/time +timezone] "request" status size referrer "user-agent" ...
-    pattern = r'(\d+\.\d+\.\d+\.\d+)\s+-\s+-\s+\[([^\]]+)\]\s+"([^"]+)"\s+(\d{3})\s+\d+\s+"-"\s+"([^"]+)"'
+    pattern = r'(\d+\.\d+\.\d+\.\d+)\s+-\s+-\s+\[([^\]]+)\]\s+"([^"]+)"\s+(\d{3})\s+\d+\s+"[^"]*"\s+"([^"]+)"'
     request_pattern = r'^(GET|POST)\s+(\S+)\s+(HTTP/\d\.\d)$'
     # Read and parse the log file
     with open(log_file, 'r') as f:
