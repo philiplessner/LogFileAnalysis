@@ -129,6 +129,19 @@ def filter_df(df: pd.DataFrame) -> pd.DataFrame:
     df_combined = pd.concat([df_human, df_robots], ignore_index=True).sort_values(by='datetime')
     return df_combined
 
+def remove_NULL(df: pd.DataFrame) -> pd.DataFrame:
+    # Remove rows where endpoint is NULL/NaN before writing to CSV or DB
+    before_count = len(df)
+    df = df[~df['endpoint'].isna()].copy()
+    after_count = len(df)
+    if before_count != after_count:
+        logger.info(
+            "Dropped %d rows with NULL endpoint (from %d to %d)",
+            before_count - after_count,
+            before_count,
+            after_count,
+        )
+    return df
 
 if __name__ == "__main__":
     # Get the paths
@@ -170,17 +183,8 @@ if __name__ == "__main__":
     geo_info = ips2geo(ips)
     df_combined = response2df(geo_info, df_combined)
 
-    # Remove rows where endpoint is NULL/NaN before writing to CSV or DB
-    before_count = len(df_combined)
-    df_combined = df_combined[~df_combined['endpoint'].isna()].copy()
-    after_count = len(df_combined)
-    if before_count != after_count:
-        logger.info(
-            "Dropped %d rows with NULL endpoint (from %d to %d)",
-            before_count - after_count,
-            before_count,
-            after_count,
-        )
+    # Remove any rows with NULL/NAN in endpoint column
+    df_combined = remove_NULL(df_combined)
 
     # Append the data to log_processed.csv
     df_combined.to_csv(path2processed, mode='a', header=not file_processed_exists, index=False)

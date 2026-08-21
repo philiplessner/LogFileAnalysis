@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from geo import get_ips, ips2geo, response2df
-from log2csv import filter_df, logfile2df, new_entries
+from log2csv import filter_df, logfile2df, new_entries, remove_NULL
 
 
 @dataclass
@@ -25,9 +25,10 @@ mypaths = MyPaths(path2log=Path('./tests/www.philiplessner.com.access-test.log')
 class NumRecords:
     log_file_records: int
     new_records: int
+    NULL_records: int
 
 
-numrecords = NumRecords(log_file_records=209, new_records=134)
+numrecords = NumRecords(log_file_records=209, new_records=134, NULL_records=5)
 
 
 @pytest.fixture
@@ -59,6 +60,8 @@ def test_processed(db):
     assert len(geo_info) == numrecords.new_records
     df_combined = response2df(geo_info, df_combined)
     assert len(df_combined) == numrecords.new_records
+    df_combined = remove_NULL(df_combined)
+    assert len(df_combined) == numrecords.new_records - numrecords.NULL_records
     record_count_before = db.execute(
         "SELECT COUNT(*) FROM logs"
     ).fetchone()[0]
