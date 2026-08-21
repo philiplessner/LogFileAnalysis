@@ -63,10 +63,17 @@ def logfile2df(log_file: Path) -> pd.DataFrame:
     return df
 
 
-def new_entries(path2log: Path, path2csv: Path) -> pd.DataFrame:
+def new_entries(
+    path2log: Path,
+    database: Path | sqlite3.Connection,
+) -> pd.DataFrame:
     df = logfile2df(path2log)
-    df_current = pd.read_csv(path2csv, parse_dates=['datetime'])
-    max_date = df_current['datetime'].max()
+    owns_connection = not isinstance(database, sqlite3.Connection)
+    db = sqlite3.connect(database) if owns_connection else database
+    latest_datetime = db.execute("SELECT MAX(datetime) FROM logs").fetchone()[0]
+    max_date = pd.to_datetime(latest_datetime, utc=True)
+    if owns_connection:
+        db.close()
     return df[df['datetime'] > max_date]
 
 
@@ -137,6 +144,7 @@ if __name__ == "__main__":
     )
     path2raw = data_dir / 'log_raw.csv'
     path2processed = data_dir / 'log_processed.csv'
+    path2db = data_dir / 'logs.db'
     file_raw_exists = path2raw.exists()
     file_processed_exists = path2processed.exists()
     logger.info("Data directory: %s", data_dir)
@@ -147,7 +155,7 @@ if __name__ == "__main__":
     if file_raw_exists: shutil.copy(path2raw, data_dir / 'log_raw.csv.bkp')
 
     # Get the get the new raw entries
-    df_new = new_entries(log_file, path2raw)
+    df_new = new_entries(log_file, path2db)
     # Write the new raw entries
     df_new.to_csv(path2raw, mode='a', header=not file_raw_exists, index=False)
 
@@ -179,7 +187,6 @@ if __name__ == "__main__":
     df_combined.to_csv(path2processed, mode='a', header=not file_processed_exists, index=False)
 
     # Append the data to logs.db
-    path2db = data_dir / 'logs.db'
 
     with closing(sqlite3.connect(path2db)) as conn:
         conn.execute("""

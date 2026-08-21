@@ -49,7 +49,7 @@ def test_records_from_log():
 
 
 def test_processed(db):
-    df_new = new_entries(mypaths.path2log, mypaths.path2raw)
+    df_new = new_entries(mypaths.path2log, db)
     assert len(df_new) == numrecords.new_records
     df_human, df_robots = filter_df(df_new)
     df_human['Agent_Type'] = 'H'
