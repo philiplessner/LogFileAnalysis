@@ -77,7 +77,7 @@ def new_entries(
     return df[df['datetime'] > max_date]
 
 
-def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+def filter_df(df: pd.DataFrame) -> pd.DataFrame:
     BOT_USER_AGENT_PATTERN = (
         r'bot|crawl|spider|slurp|scrapy|headlesschrome|censys|'
         r'internet[-_ ]?measurement|panscient|turnitin|siteradar|'
@@ -122,9 +122,12 @@ def filter_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     )
 
     # Return copies to avoid SettingWithCopyWarning when modifying downstream
-    df_filtered = df[mask].copy()
-    df = df[~mask].copy()
-    return df, df_filtered
+    df_robots= df[mask].copy()
+    df_human = df[~mask].copy()
+    df_human['Agent_Type'] = 'H'
+    df_robots['Agent_Type'] = 'R'
+    df_combined = pd.concat([df_human, df_robots], ignore_index=True).sort_values(by='datetime')
+    return df_combined
 
 
 if __name__ == "__main__":
@@ -160,11 +163,7 @@ if __name__ == "__main__":
     df_new.to_csv(path2raw, mode='a', header=not file_raw_exists, index=False)
 
     # Filter for robots and human user agents
-    df_human, df_robots = filter_df(df_new)
-    df_human['Agent_Type'] = 'H'
-    df_robots['Agent_Type'] = 'R'
-    # Combine the dataframes
-    df_combined = pd.concat([df_human, df_robots], ignore_index=True).sort_values(by='datetime')
+    df_combined = filter_df(df_new)
 
     # Get the geo data and append geo columns in dataframe
     ips = get_ips(df_combined)

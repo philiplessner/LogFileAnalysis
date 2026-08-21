@@ -51,11 +51,7 @@ def test_records_from_log():
 def test_processed(db):
     df_new = new_entries(mypaths.path2log, db)
     assert len(df_new) == numrecords.new_records
-    df_human, df_robots = filter_df(df_new)
-    df_human['Agent_Type'] = 'H'
-    df_robots['Agent_Type'] = 'R'
-    # Combine the dataframes
-    df_combined = pd.concat([df_human, df_robots], ignore_index=True).sort_values(by='datetime')
+    df_combined = filter_df(df_new)
     assert len(df_combined) == numrecords.new_records
     ips = get_ips(df_combined)
     assert len(ips) == numrecords.new_records
