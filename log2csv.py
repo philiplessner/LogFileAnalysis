@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import shutil
 import sqlite3
 from contextlib import closing
 from pathlib import Path
@@ -158,22 +157,14 @@ if __name__ == "__main__":
         format='%(asctime)s %(levelname)s %(name)s: %(message)s',
         encoding='utf-8',
     )
-    path2raw = data_dir / 'log_raw.csv'
-    path2processed = data_dir / 'log_processed.csv'
     path2db = data_dir / 'logs.db'
-    file_raw_exists = path2raw.exists()
-    file_processed_exists = path2processed.exists()
     logger.info("Data directory: %s", data_dir)
     logger.info("Source log file: %s", log_file)
 
-    # Backup current csv files
-    if file_processed_exists: shutil.copy(path2processed, data_dir / 'log_processed.csv.bkp')
-    if file_raw_exists: shutil.copy(path2raw, data_dir / 'log_raw.csv.bkp')
 
     # Get the get the new raw entries
     df_new = new_entries(log_file, path2db)
     # Write the new raw entries
-    df_new.to_csv(path2raw, mode='a', header=not file_raw_exists, index=False)
 
     # Filter for robots and human user agents
     df_combined = filter_df(df_new)
@@ -186,8 +177,6 @@ if __name__ == "__main__":
     # Remove any rows with NULL/NAN in endpoint column
     df_combined = remove_NULL(df_combined)
 
-    # Append the data to log_processed.csv
-    df_combined.to_csv(path2processed, mode='a', header=not file_processed_exists, index=False)
 
     # Append the data to logs.db
 
