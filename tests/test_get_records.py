@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from geo import get_ips, ips2geo, response2df
-from log2csv import filter_df, logfile2df, new_entries, remove_NULL
+from log2csv import filter_df, logfile2df, new_entries, remove_NULL, append2db
 
 
 @dataclass
@@ -65,14 +65,7 @@ def test_processed(db):
     record_count_before = db.execute(
         "SELECT COUNT(*) FROM logs"
     ).fetchone()[0]
-    df_combined.to_sql(
-        "logs",
-        db,
-        if_exists="append",
-        index=False,
-    )
-    db.commit()
-
+    append2db(db, df_combined)
     record_count_after = db.execute(
         "SELECT COUNT(*) FROM logs"
     ).fetchone()[0]

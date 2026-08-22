@@ -67,8 +67,12 @@ def new_entries(
     database: Path | sqlite3.Connection,
 ) -> pd.DataFrame:
     df = logfile2df(path2log)
-    owns_connection = not isinstance(database, sqlite3.Connection)
-    db = sqlite3.connect(database) if owns_connection else database
+    if isinstance(database, sqlite3.Connection):
+        db = database
+        owns_connection = False
+    else:
+        db = sqlite3.connect(database)
+        owns_connection = True
     latest_datetime = db.execute("SELECT MAX(datetime) FROM logs").fetchone()[0]
     max_date = pd.to_datetime(latest_datetime, utc=True)
     if owns_connection:
@@ -144,25 +148,14 @@ def remove_NULL(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def main(log_file: Path, path2db: Path) -> None:
-    # Get the get the new raw entries
-    df_new = new_entries(log_file, path2db)
-
-    # Filter for robots and human user agents
-    df_combined = filter_df(df_new)
-
-    # Get the geo data and append geo columns in dataframe
-    ips = get_ips(df_combined)
-    geo_info = ips2geo(ips)
-    df_combined = response2df(geo_info, df_combined)
-
-    # Remove any rows with NULL/NAN in endpoint column
-    df_combined = remove_NULL(df_combined)
-
-    # Append the data to logs.db
-
-    with closing(sqlite3.connect(path2db)) as conn:
-        conn.execute("""
+def append2db(database: Path | sqlite3.Connection, df_combined: pd.DataFrame) -> None:
+    if isinstance(database, sqlite3.Connection):
+        db = database
+        owns_connection = False
+    else:
+        db = sqlite3.connect(database)
+        owns_connection = True 
+    db.execute("""
             CREATE TABLE IF NOT EXISTS logs (
                 id INTEGER PRIMARY KEY,
                 ip_address TEXT,
@@ -185,13 +178,35 @@ def main(log_file: Path, path2db: Path) -> None:
             )
         """)
 
-        df_combined.to_sql(
-            "logs",
-            conn,
-            if_exists="append",
-            index=False,
-        )
-        conn.commit()
+    df_combined.to_sql(
+        "logs",
+        db,
+        if_exists="append",
+        index=False,
+    )
+    db.commit()
+    if owns_connection:
+        db.close()
+
+
+def main(log_file: Path, database: Path | sqlite3.Connection) -> None:
+    # Get the get the new raw entries
+    df_new = new_entries(log_file, path2db)
+
+    # Filter for robots and human user agents
+    df_combined = filter_df(df_new)
+
+    # Get the geo data and append geo columns in dataframe
+    ips = get_ips(df_combined)
+    geo_info = ips2geo(ips)
+    df_combined = response2df(geo_info, df_combined)
+
+    # Remove any rows with NULL/NAN in endpoint column
+    df_combined = remove_NULL(df_combined)
+
+    # Append the data to logs.db
+    append2db(database, df_combined)
+
 
 
 if __name__ == "__main__":
