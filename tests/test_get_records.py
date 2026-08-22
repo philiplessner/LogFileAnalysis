@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from geo import get_ips, ips2geo, response2df
-from log2csv import filter_df, logfile2df, new_entries, remove_NULL, append2db
+from log2csv import append2db, filter_df, logfile2df, new_entries, remove_NULL
 
 
 @dataclass

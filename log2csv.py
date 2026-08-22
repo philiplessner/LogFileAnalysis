@@ -2,7 +2,6 @@ import logging
 import os
 import re
 import sqlite3
-from contextlib import closing
 from pathlib import Path
 
 import pandas as pd
@@ -206,7 +205,6 @@ def main(log_file: Path, database: Path | sqlite3.Connection) -> None:
 
     # Append the data to logs.db
     append2db(database, df_combined)
-
 
 
 if __name__ == "__main__":
