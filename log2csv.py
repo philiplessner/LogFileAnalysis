@@ -128,6 +128,7 @@ def filter_df(df: pd.DataFrame) -> pd.DataFrame:
     df_combined = pd.concat([df_human, df_robots], ignore_index=True).sort_values(by='datetime')
     return df_combined
 
+
 def remove_NULL(df: pd.DataFrame) -> pd.DataFrame:
     # Remove rows where endpoint is NULL/NaN before writing to CSV or DB
     before_count = len(df)
@@ -141,6 +142,7 @@ def remove_NULL(df: pd.DataFrame) -> pd.DataFrame:
             after_count,
         )
     return df
+
 
 def main(log_file: Path, path2db: Path) -> None:
     # Get the get the new raw entries
@@ -190,6 +192,7 @@ def main(log_file: Path, path2db: Path) -> None:
             index=False,
         )
         conn.commit()
+
 
 if __name__ == "__main__":
     # Get the paths
