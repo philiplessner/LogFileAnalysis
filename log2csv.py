@@ -142,29 +142,9 @@ def remove_NULL(df: pd.DataFrame) -> pd.DataFrame:
         )
     return df
 
-if __name__ == "__main__":
-    # Get the paths
-    if (str(Path.cwd()) == '/app'):
-        data_dir = Path('/app/data.philiplessner.com')
-        log_file = Path('/app/data.philiplessner.com/www.philiplessner.com.access.log')
-    else:
-        load_dotenv()
-        data_dir = Path(os.environ['DATA_FILE_DIR'])
-        log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
-    logging.basicConfig(
-        filename=data_dir / 'processed.log',
-        level=logging.INFO,
-        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
-        encoding='utf-8',
-    )
-    path2db = data_dir / 'logs.db'
-    logger.info("Data directory: %s", data_dir)
-    logger.info("Source log file: %s", log_file)
-
-
+def main(log_file: Path, path2db: Path) -> None:
     # Get the get the new raw entries
     df_new = new_entries(log_file, path2db)
-    # Write the new raw entries
 
     # Filter for robots and human user agents
     df_combined = filter_df(df_new)
@@ -176,7 +156,6 @@ if __name__ == "__main__":
 
     # Remove any rows with NULL/NAN in endpoint column
     df_combined = remove_NULL(df_combined)
-
 
     # Append the data to logs.db
 
@@ -211,3 +190,26 @@ if __name__ == "__main__":
             index=False,
         )
         conn.commit()
+
+if __name__ == "__main__":
+    # Get the paths
+    if (str(Path.cwd()) == '/app'):  # Running in Docker Container
+        data_dir = Path('/app/data.philiplessner.com')
+        log_file = Path('/app/data.philiplessner.com/www.philiplessner.com.access.log')
+    else:
+        load_dotenv()
+        data_dir = Path(os.environ['DATA_FILE_DIR'])
+        log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
+    path2db = data_dir / 'logs.db'
+
+    logging.basicConfig(
+        filename=data_dir / 'processed.log',
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+        encoding='utf-8',
+    )
+
+    logger.info("Data directory: %s", data_dir)
+    logger.info("Source log file: %s", log_file)
+
+    main(log_file, path2db)
