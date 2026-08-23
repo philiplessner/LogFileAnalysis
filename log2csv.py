@@ -190,7 +190,7 @@ def append2db(database: Path | sqlite3.Connection, df_combined: pd.DataFrame) ->
 
 def main(log_file: Path, database: Path | sqlite3.Connection) -> None:
     # Get the get the new raw entries
-    df_new = new_entries(log_file, path2db)
+    df_new = new_entries(log_file, database)
 
     # Filter for robots and human user agents
     df_combined = filter_df(df_new)

@@ -2,11 +2,10 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from geo import get_ips, ips2geo, response2df
-from log2csv import append2db, filter_df, logfile2df, new_entries, remove_NULL
+from log2csv import append2db, filter_df, logfile2df, main, new_entries, remove_NULL
 
 
 @dataclass
@@ -70,4 +69,16 @@ def test_processed(db):
         "SELECT COUNT(*) FROM logs"
     ).fetchone()[0]
     assert record_count_after - record_count_before == len(df_combined)
+    db.rollback()
+
+
+def test_main(db):
+    record_count_before = db.execute(
+        "SELECT COUNT(*) FROM logs"
+    ).fetchone()[0]
+    main(mypaths.path2log, db)
+    record_count_after = db.execute(
+        "SELECT COUNT(*) FROM logs"
+    ).fetchone()[0]
+    assert record_count_after - record_count_before == numrecords.new_records - numrecords.NULL_records
 
