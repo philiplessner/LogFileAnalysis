@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from geo import get_ips, ips2geo, response2df
-from log2csv import append2db, filter_df, logfile2df, main, new_entries, remove_NULL
+from log2db import append2db, filter_df, logfile2df, main, new_entries, remove_NULL
 
 
 @dataclass

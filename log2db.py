@@ -188,6 +188,17 @@ def append2db(database: Path | sqlite3.Connection, df_combined: pd.DataFrame) ->
         db.close()
 
 
+def get_paths()-> tuple[Path, Path]:
+    # Get the paths
+    if (str(Path.cwd()) == '/app'):  # Running in Docker Container
+        data_dir = Path('/app/data.philiplessner.com')
+        log_file = Path('/app/data.philiplessner.com/www.philiplessner.com.access.log')
+    else:
+        load_dotenv()
+        data_dir = Path(os.environ['DATA_FILE_DIR'])
+        log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
+    return data_dir, log_file
+
 def main(log_file: Path, database: Path | sqlite3.Connection) -> None:
     # Get the get the new raw entries
     df_new = new_entries(log_file, database)
@@ -208,14 +219,7 @@ def main(log_file: Path, database: Path | sqlite3.Connection) -> None:
 
 
 if __name__ == "__main__":
-    # Get the paths
-    if (str(Path.cwd()) == '/app'):  # Running in Docker Container
-        data_dir = Path('/app/data.philiplessner.com')
-        log_file = Path('/app/data.philiplessner.com/www.philiplessner.com.access.log')
-    else:
-        load_dotenv()
-        data_dir = Path(os.environ['DATA_FILE_DIR'])
-        log_file = Path(os.environ['LOG_FILE_DIR'], os.environ['LOG_FILE'])
+    data_dir, log_file = get_paths()
     path2db = data_dir / 'logs.db'
 
     logging.basicConfig(
