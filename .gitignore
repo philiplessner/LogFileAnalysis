@@ -7,3 +7,6 @@ __pycache__
 archive
 .mypy_cache
 .pytest_cache
+.mysql.env
+.mysql-migration/
+.venv-mysql/

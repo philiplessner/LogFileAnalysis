@@ -1,1 +1,123 @@
 Code to collect and analyze website log access files.
+
+## MySQL test database
+
+The test copy runs MySQL **8.0.40**, pinned by image digest in
+`compose.mysql.yaml`. It stores the `logs` table in `philiplessner_logs_test`.
+The service is reachable at `127.0.0.1:3307` using the `logs_test` account.
+Credentials are in the ignored `.mysql.env` file, created with owner-only
+permissions. The MySQL data lives in the Docker volume
+`philiplessner-logs-test_mysql_data` and survives container replacement.
+
+This is a point-in-time copy. `log2db.py` still writes to SQLite; it needs the
+connection and timestamp changes discussed in the migration review before it
+can ingest into MySQL. `analyzedb.ipynb` continues to use SQLite;
+`analyzedb-mysql.ipynb` analyzes the MySQL copy.
+
+### Create the test instance and import
+
+Run from the repository root with Docker running and Python 3.10 or later:
+
+```bash
+python3 mysql/setup_credentials.py
+python3 -m venv .venv-mysql
+.venv-mysql/bin/python -m pip install -r mysql/requirements.txt
+docker compose -f compose.mysql.yaml up -d --wait --wait-timeout 180
+.venv-mysql/bin/python mysql/migrate.py --snapshot .mysql-migration/logs-initial.db
+```
+
+The credential setup preserves any existing `.mysql.env` file. Its contents
+use literal, unquoted `KEY=VALUE` entries. Keep that file with the persistent
+volume: changing its passwords does not change accounts in an initialized
+MySQL instance. The root account initializes the database; the importer uses
+the separate `logs_test` account, whose grants are scoped to the test database.
+
+The importer opens `data.philiplessner.com/logs.db` read-only and uses SQLite's
+backup API to create a consistent snapshot, including committed WAL records.
+It checks snapshot integrity and validates the types and sizes of every value
+before insertion. All rows are inserted in one transaction. Verification
+failures before commit roll back the inserts. A fresh connection verifies the
+committed data again.
+
+The schema is in `mysql/schema.sql`, executed on initial container setup. It
+preserves all 18 columns and the source IDs, including gaps. `datetime` is
+`DATETIME(6)` with UTC values; its original timezone offset is normalized during
+import. The `timezone` column remains visitor geolocation metadata. Text uses
+`utf8mb4_0900_bin` to preserve case and trailing-space distinctions, postal codes
+remain text, and coordinates use `DOUBLE`. Indexes cover `datetime` and
+`(Agent_Type, datetime)`.
+
+An import refuses a populated target and never deletes existing records. It
+also refuses to overwrite a snapshot. To repeat an import, use a fresh test
+database and a new snapshot path. The importer checks that the server is
+MySQL 8.0.40. It loads the rows into memory for full comparison; this is suitable
+for this database's current size.
+
+### Verify the copy
+
+```bash
+.venv-mysql/bin/python mysql/migrate.py --verify-only --snapshot .mysql-migration/logs-initial.db --report .mysql-migration/verification.json
+```
+
+Verification compares every column of every row by ID, canonical SHA-256
+checksums, grouped totals for date/country/status/agent/endpoint, and the next
+auto-increment ID. The original import report is `.mysql-migration/report.json`.
+Snapshots and reports are ignored by Git. Compare against the original snapshot
+because the active SQLite database can continue receiving new records.
+
+The initial import copied **8,949 rows**, with IDs from **1 through 9,083** and
+timestamps from **2026-07-12 11:11:43 UTC** through **2026-09-25 03:22:06 UTC**.
+All 18 columns matched after normalization, including 51 null regions and 512
+null postal codes. The next generated ID was 9,084. The SQLite source file was
+byte-for-byte unchanged during the import.
+
+### Connect and manage the container
+
+```bash
+mysql --host=127.0.0.1 --port=3307 --user=logs_test --password philiplessner_logs_test
+docker compose -f compose.mysql.yaml ps
+docker compose -f compose.mysql.yaml stop
+docker compose -f compose.mysql.yaml up -d --wait
+```
+
+Enter `MYSQL_PASSWORD` from `.mysql.env` at the password prompt. From another
+container on this Compose network, use hostname `mysql` and port `3306`.
+Stopping the container preserves the volume. `docker compose down` also keeps
+the data unless `--volumes` is explicitly requested; that option deletes it.
+
+### Analyze the MySQL copy
+
+Open `analyzedb-mysql.ipynb` with the **numeric** kernel from the repository root.
+It uses the same `.mysql.env` credentials and reproduces the country, endpoint,
+and daily human/robot charts and HTML exports from `analyzedb.ipynb`.
+
+The additional package requirement is `PyMySQL[rsa]`, already specified in
+`mysql/requirements.txt`. The `rsa` extra installs `cryptography` for MySQL
+password authentication. Install it in the notebook's environment with:
+
+```bash
+conda run -n numeric python -m pip install -r mysql/requirements.txt
+```
+
+`ipywidgets`, `matplotlib`, and `python-dotenv` are also required and are already
+present in the numeric environment used for this project. The notebook queries
+through PyMySQL directly and does not require SQLAlchemy.
+
+Run the cells in order. Select inclusive UTC start/end dates and rerun the cells
+below the date pickers. After changing the top-N slider, rerun the charts and
+exports. HTML files are written to `data.philiplessner.com/mysql-analysis/`.
+Only philiplessner.com has been migrated so far. The original 404 filters are
+preserved. Robot endpoint percentages use the robot total, correcting the
+original SQLite notebook's denominator.
+
+### Tests
+
+```bash
+.venv-mysql/bin/python -m unittest discover -s mysql -p 'test_*.py' -v
+MYSQL_INTEGRATION_TESTS=1 .venv-mysql/bin/python -m unittest discover -s mysql -p 'test_*.py' -v
+```
+
+The live test creates a connection-local temporary table and tests Unicode,
+quotes, nulls, leading-zero postal codes, UTC conversion, generated IDs,
+case-sensitive grouping, trailing spaces, and transaction rollback. It does
+not modify `logs`.
