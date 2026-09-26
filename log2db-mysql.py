@@ -135,9 +135,13 @@ def cli() -> None:
         log_file = args.log_file
         data_dir = log_file.parent
     logging.basicConfig(
-        filename=data_dir / 'processed-mysql.log', level=logging.INFO,
-        format='%(asctime)s %(levelname)s %(name)s: %(message)s', encoding='utf-8',
+        filename=data_dir / 'processed-mysql.log',
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+        encoding='utf-8',
     )
+
+    logger.info('Data directory: %s', data_dir)
     logger.info('Source log file: %s', log_file)
     with closing(connect_database(args.env_file)) as database:
         main(log_file, database)
