@@ -130,10 +130,12 @@ def cli() -> None:
                         help='Access log; defaults to the same paths as log2db.py')
     args = parser.parse_args()
     if args.log_file is None:
-        data_dir, log_file = get_paths()
+        _, log_file = get_paths()
     else:
         log_file = args.log_file
-        data_dir = log_file.parent
+    # Keep processing logs in the project even when access logs live in /var/log.
+    data_dir = ROOT / 'data.philiplessner.com'
+    data_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
         filename=data_dir / 'processed-mysql.log',
         level=logging.INFO,
