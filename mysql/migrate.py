@@ -1,20 +1,19 @@
 """Copy logs from a consistent SQLite snapshot to an empty MySQL 8.0.40 table."""
 
 import argparse
-from collections import Counter
-from contextlib import closing
-from datetime import datetime, timezone
 import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import re
 import sqlite3
 import sys
+from collections import Counter
+from contextlib import closing
+from datetime import datetime, timezone
+from pathlib import Path
 
 import pymysql
-
 
 ROOT = Path(__file__).resolve().parents[1]
 COLUMNS = (
