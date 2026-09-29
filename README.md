@@ -118,6 +118,20 @@ Open `analyzedb-mysql.ipynb` with the **numeric** kernel from the repository roo
 It uses the same `.mysql.env` credentials and reproduces the country, endpoint,
 and daily human/robot charts and HTML exports from `analyzedb.ipynb`.
 
+The notebook also reads `MYSQL_HOST` and `MYSQL_PORT` from `.mysql.env`.
+Process environment variables take precedence; if neither supplies these settings,
+it defaults to local Docker at `127.0.0.1:3307`. When running the notebook on
+PythonAnywhere, add these settings to the server's existing `.mysql.env`:
+
+```dotenv
+MYSQL_HOST=philiplessner.mysql.pythonanywhere-services.com
+MYSQL_PORT=3306
+```
+
+Keep the server credentials and full database name that worked for migration.
+Restart the kernel and run all cells after changing connection settings. The
+configuration cell displays the selected host and port before connecting.
+
 The additional package requirement is `PyMySQL[rsa]`, already specified in
 `mysql/requirements.txt`. The `rsa` extra installs `cryptography` for MySQL
 password authentication. Install it in the notebook's environment with:
