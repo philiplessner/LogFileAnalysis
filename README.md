@@ -48,8 +48,8 @@ remain text, and coordinates use `DOUBLE`. Indexes cover `datetime` and
 
 An import refuses a populated target and never deletes existing records. It
 also refuses to overwrite a snapshot. To repeat an import, use a fresh test
-database and a new snapshot path. The importer checks that the server is
-MySQL 8.0.40. It loads the rows into memory for full comparison; this is suitable
+database and a new snapshot path. The importer accepts MySQL 8.0.40 (the local Docker instance)
+or 8.0.46 (the PythonAnywhere server). It loads the rows into memory for full comparison; this is suitable
 for this database's current size.
 
 ### Import new access-log entries into MySQL

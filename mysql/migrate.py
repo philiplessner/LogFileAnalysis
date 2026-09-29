@@ -1,4 +1,4 @@
-"""Copy logs from a consistent SQLite snapshot to an empty MySQL 8.0.40 table."""
+"""Copy logs from a consistent SQLite snapshot to an empty MySQL 8.0.40 or 8.0.46 table."""
 
 import argparse
 import hashlib
@@ -180,8 +180,8 @@ def run(args) -> dict:
             with conn.cursor() as cursor:
                 cursor.execute('SELECT VERSION()')
                 version = cursor.fetchone()[0]
-                if version.split('-')[0] != '8.0.40':
-                    raise ValueError(f'Expected MySQL 8.0.40, found {version}')
+                if version.split('-')[0] not in ('8.0.40', '8.0.46'):
+                    raise ValueError(f'Expected MySQL 8.0.40 or 8.0.46, found {version}')
                 cursor.execute("SET SESSION time_zone = '+00:00'")
                 cursor.execute('SET SESSION sql_mode = %s', (SQL_MODE,))
                 cursor.execute('SET SESSION information_schema_stats_expiry = 0')
